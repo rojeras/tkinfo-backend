@@ -1,0 +1,12 @@
+
+.idea/
+
+webpack.config.d/
+
+.gradle/
+
+build/
+
+src/main/web/cache/
+
+src/main/web/tkview/
