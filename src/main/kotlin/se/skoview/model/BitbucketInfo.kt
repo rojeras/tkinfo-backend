@@ -17,7 +17,7 @@
 
 @file:Suppress("SENSELESS_COMPARISON")
 
-package com.example.model
+package se.skoview.model
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*

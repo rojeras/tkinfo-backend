@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package com.example.model
+package se.skoview.model
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*

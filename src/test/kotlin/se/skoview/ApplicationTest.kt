@@ -1,4 +1,4 @@
-package com.example
+package se.skoview
 
 import io.ktor.application.*
 import io.ktor.http.*

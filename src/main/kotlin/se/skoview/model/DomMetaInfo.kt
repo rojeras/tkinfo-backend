@@ -1,4 +1,4 @@
-package com.example.model
+package se.skoview.model
 
 import kotlinx.serialization.Serializable
 

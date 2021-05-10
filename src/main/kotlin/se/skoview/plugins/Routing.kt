@@ -1,6 +1,6 @@
-package com.example.plugins
+package se.skoview.plugins
 
-import com.example.model.TiDomain
+import se.skoview.model.TiDomain
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.request.*

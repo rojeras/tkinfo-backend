@@ -8,11 +8,11 @@ plugins {
     kotlin("plugin.serialization") version "1.5.0"
 }
 
-group = "com.example"
+group = "se.skoview"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.example.ApplicationKt")
+    mainClass.set("se.skoview.ApplicationKt")
 }
 
 repositories {
