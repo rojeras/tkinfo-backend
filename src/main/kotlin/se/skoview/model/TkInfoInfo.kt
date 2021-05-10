@@ -134,9 +134,6 @@ fun mkTkInfoInfo() {
         tiDomainStorage.add(tiDomain)
     }
     println("All TiDomains, there are ${tiDomainStorage.size}")
-    for (dom in tiDomainStorage) {
-        println(dom)
-    }
 }
 
 enum class TiDomainTypeEnum {
