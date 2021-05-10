@@ -16,6 +16,7 @@
  */
 package com.example.model
 
+import com.example.plugins.tiDomainStorage
 import kotlinx.serialization.Serializable
 
 /**
@@ -31,7 +32,7 @@ import kotlinx.serialization.Serializable
  *
  */
 
-val tiDomainStorage = mutableListOf<TiDomain>()
+// val tiDomainStorage = mutableListOf<TiDomain>()
 
 fun mkTkInfoInfo() {
     println("In mkTkInfoInfo()")

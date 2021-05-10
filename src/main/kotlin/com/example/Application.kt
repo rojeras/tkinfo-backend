@@ -10,6 +10,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
 suspend fun main() {
+    println("In main()")
     takApiLoad()
     domdbLoad()
     bitbucketLoad()
@@ -22,6 +23,7 @@ suspend fun main() {
 }
 
 fun Application.module() {
+    println("In Application.module()")
     install(ContentNegotiation) {
         json()
     }

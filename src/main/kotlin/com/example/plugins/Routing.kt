@@ -1,12 +1,13 @@
 package com.example.plugins
 
 import com.example.model.TiDomain
-import com.example.model.tiDomainStorage
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+
+val tiDomainStorage = mutableListOf<TiDomain>()
 
 fun Application.configureRouting() {
     // Starting point for a Ktor app:
@@ -15,7 +16,7 @@ fun Application.configureRouting() {
             call.respondText("Hello World!")
         }
         get("/domains") {
-            call.respond(tiDomainStorage)
+            // call.respond(tiDomainStorage)
             println("There are ${getNumberOfDomains()} domains.")
         }
     }
