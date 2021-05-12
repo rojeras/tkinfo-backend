@@ -97,7 +97,6 @@ data class TakServiceContract(
     val minor: Int
 ) {
     init {
-        println(namespace)
         takInstalledContractNamespace.add(namespace)
     }
 }

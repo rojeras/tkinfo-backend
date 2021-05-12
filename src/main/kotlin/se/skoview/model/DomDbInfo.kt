@@ -31,10 +31,10 @@ import kotlin.collections.List
 @Serializable
 data class SearchResult(val total_count: Int, val incomplete_results: Boolean)
 
-val DomdbDomainArr = mutableListOf<DomdbServiceDomain>()
+val DomdbDomainList = mutableListOf<DomdbServiceDomain>()
 val DomdbDomainMap = mutableMapOf<String, DomdbServiceDomain>()
 
-suspend fun domdbLoad() {
+suspend fun domdbLoad(): List<DomdbServiceDomain> {
     println("In domdbLoad()")
     val client: io.ktor.client.HttpClient = HttpClient(CIO) {
         install(JsonFeature) {
@@ -45,9 +45,10 @@ suspend fun domdbLoad() {
         }
     }
 
-    client.get<List<DomdbServiceDomain>>("http://api.ntjp.se/dominfo/v1/servicedomains.json")
+    val domdbList = client.get<List<DomdbServiceDomain>>("http://api.ntjp.se/dominfo/v1/servicedomains.json")
     println("Leaving domdbLoad()")
     client.close()
+    return domdbList
 }
 
 /*
@@ -121,17 +122,23 @@ data class DomdbServiceDomain(
     var domainTypeString: String? = null // Used for filtering in tabulator
 
     init {
+        /*
         if (
             interactions != null &&
             serviceContracts != null &&
             versions != null
         ) {
             DomdbDomainMap[this.name] = this
-            DomdbDomainArr.add(this)
+            DomdbDomainList.add(this)
             domainTypeString = domainType.name
         } else {
-            if (!this.name.isNullOrBlank()) println("${this.name} is incomplete and removed")
+            // if (!this.name.isNullOrBlank()) println("${this.name} is incomplete and removed")
         }
+         */
+
+        DomdbDomainMap[this.name] = this
+        DomdbDomainList.add(this)
+        domainTypeString = domainType.name
     }
 }
 

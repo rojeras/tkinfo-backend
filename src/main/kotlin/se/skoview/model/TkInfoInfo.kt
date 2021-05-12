@@ -16,8 +16,8 @@
  */
 package se.skoview.model
 
-import se.skoview.plugins.tiDomainStorage
 import kotlinx.serialization.Serializable
+import se.skoview.plugins.tiDomainStorage
 
 /**
  * Populate TkView objects from Bitbucket, DOMDB-api, TAK-api and TPDB-api
@@ -45,7 +45,7 @@ fun mkTkInfoInfo() {
 
         // Does this domain exist in domdb?
         if (DomdbDomainMap[domainName] == null) {
-            println("No visible version for ${bbDomain.name}")
+            // println("No visible version for ${bbDomain.name}")
             continue
         }
 
@@ -170,12 +170,14 @@ data class TiDomain(
 ) {
 
     init {
-        mapp[name] = this
+        ID_MAPP[id] = this
+        NAME_MAPP[name] = this
     }
 
     companion object {
         var idIx = 0
-        val mapp: MutableMap<String, TiDomain> = mutableMapOf()
+        val ID_MAPP: MutableMap<Int, TiDomain> = mutableMapOf()
+        val NAME_MAPP: MutableMap<String, TiDomain> = mutableMapOf()
     }
 }
 
