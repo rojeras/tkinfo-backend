@@ -9,6 +9,7 @@ import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
 import io.ktor.features.*
 import io.ktor.http.*
+import io.ktor.http.ContentType.Application.Json
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
@@ -20,13 +21,21 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module() {
     println("In Application.module()")
 
+    val myHost = environment.config.propertyOrNull("ktor.deployment.host")?.getString() ?: "localhost"
+    val myPort = environment.config.propertyOrNull("ktor.deployment.port")?.getString() ?: "8080"
+
+    // There might be better ways, see https://ktor.io/docs/requests.html#route_parameters 
+    println("I am $myHost:$myPort")
+
     loadExternalInfo()
     mkTkInfoInfo()
 
     println("Number of ti-domains: ${tiDomainStorage.size}")
 
     install(ContentNegotiation) {
-        json()
+        json(kotlinx.serialization.json.Json {
+            encodeDefaults = false // Removes null values from response (and all other defaults!)
+        })
     }
 
     routing {

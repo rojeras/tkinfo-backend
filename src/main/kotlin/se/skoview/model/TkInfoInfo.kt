@@ -61,13 +61,30 @@ fun mkTkInfoInfo() {
             else -> null
         }
 
-        val issuesUrl: String? =
-            if (bbDomain.links?.issues != null) bbDomain.links.issues.href
+        val issuesUrl: TiHref? =
+            if (bbDomain.links?.issues != null) TiHref(bbDomain.links.issues.href)
             else null
 
-        val sourceUrl: String? =
-            if (bbDomain.links?.source != null) bbDomain.links.source.href
+        val sourceUrl: TiHref? =
+            if (bbDomain.links?.source != null) TiHref(bbDomain.links.source.href)
             else null
+
+        val hippoUrl: TiHref? =
+            if (! mkHippoDomainUrl(domainName).isNullOrBlank()) TiHref(mkHippoDomainUrl(domainName))
+            else null
+
+        val releaseNotesUrl: TiHref? =
+            if (ddDomain.infoPageUrl != null) TiHref(ddDomain.infoPageUrl)
+            else null
+
+        val tiLinks = TiLinks(
+            self = TiHref("http://localhost/domains/$domainName"),
+            issues = issuesUrl,
+            source = sourceUrl,
+            hippo = hippoUrl,
+            `release-notes` = releaseNotesUrl,
+        )
+
 
         /*
  
@@ -123,9 +140,7 @@ fun mkTkInfoInfo() {
                 domainType = tiDomainType,
                 description = ddDomain.description,
                 owner = ddDomain.owner,
-                issuesUrl = issuesUrl,
-                sourceUrl = sourceUrl,
-                releaseNotesUrl = ddDomain.infoPageUrl,
+                links = tiLinks,
                 bbiUid = bbDomain.uuid,
                 // todo: Empty hippoUrl should be changed to null
                 hippoUrl = mkHippoDomainUrl(domainName),
@@ -154,35 +169,45 @@ enum class TiSourceEnum {
 
 @Serializable
 data class TiDomain(
-    val id: Int = idIx++,
     val name: String,
     val swedishShortName: String? = null,
     val swedishLongName: String? = null,
     val domainType: TiDomainTypeEnum? = null,
     val description: String,
     val owner: String?,
-    val issuesUrl: String?,
-    val sourceUrl: String?,
-    val releaseNotesUrl: String?,
     val bbiUid: String = "",
     val hippoUrl: String?,
+    val links: TiLinks,
     // val versions: List<DomainVersion>?
 ) {
 
     init {
-        ID_MAPP[id] = this
         NAME_MAPP[name] = this
     }
 
     companion object {
-        var idIx = 0
-        val ID_MAPP: MutableMap<Int, TiDomain> = mutableMapOf()
         val NAME_MAPP: MutableMap<String, TiDomain> = mutableMapOf()
     }
 }
 
+
 @Serializable
-data class DomainVersion(
+data class TiLinks(
+    val self: TiHref,
+    val source: TiHref? = null,
+    val issues: TiHref ? = null,
+    val versions: TiHref? = null,
+    val html: TiHref? = null,
+    val hippo: TiHref? = null,
+    val `release-notes`: TiHref? = null
+)
+
+
+@Serializable
+data class TiHref(val href: String)
+
+@Serializable
+data class TiDomainVersion(
     val name: String,
     val tag: String,
     val tkbUrl: String,
@@ -215,7 +240,7 @@ data class TiContractVersion(
     val minor: Int,
     val parent: TiContract,
     val hippoUrl: String?,
-    val partOfDomainVersions: List<DomainVersion>
+    val partOfTiDomainVersions: List<TiDomainVersion>
 )
 
 @Serializable
