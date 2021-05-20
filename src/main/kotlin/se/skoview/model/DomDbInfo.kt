@@ -184,6 +184,9 @@ data class DomdbVersion(
     val interactionDescriptions: Array<DomdbInteractionDescription> = arrayOf<DomdbInteractionDescription>(),
     val reviews: List<DomdbReview> = listOf<DomdbReview>()
 ) {
+    val tagName = if (sourceControlPath.substringAfterLast("/") == "master") "trunk"
+    else sourceControlPath.substringAfterLast("/")
+
     init {
         if (zipUrl.startsWith("http://rivta.se"))
             zipUrl = zipUrl.replace("http://rivta.se", "https://rivta.se")

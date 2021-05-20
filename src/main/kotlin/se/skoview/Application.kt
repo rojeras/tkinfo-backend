@@ -18,24 +18,30 @@ import se.skoview.plugins.tiDomainStorage
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
+var myHost = "localhost"
+var myPort = "8080"
+
 fun Application.module() {
     println("In Application.module()")
 
-    val myHost = environment.config.propertyOrNull("ktor.deployment.host")?.getString() ?: "localhost"
-    val myPort = environment.config.propertyOrNull("ktor.deployment.port")?.getString() ?: "8080"
+    myHost = environment.config.propertyOrNull("ktor.deployment.host")?.getString() ?: myHost
+    myPort = environment.config.propertyOrNull("ktor.deployment.port")?.getString() ?: myPort
 
     // There might be better ways, see https://ktor.io/docs/requests.html#route_parameters 
     println("I am $myHost:$myPort")
 
     loadExternalInfo()
-    mkTkInfoInfo()
+    // mkTkInfoInfo()
 
     println("Number of ti-domains: ${tiDomainStorage.size}")
 
     install(ContentNegotiation) {
-        json(kotlinx.serialization.json.Json {
-            encodeDefaults = false // Removes null values from response (and all other defaults!)
-        })
+        json(
+            kotlinx.serialization.json.Json {
+                encodeDefaults = false // Removes null values from response (and all other defaults!)
+                ignoreUnknownKeys = true
+            }
+        )
     }
 
     routing {

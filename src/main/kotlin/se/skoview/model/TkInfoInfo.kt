@@ -16,7 +16,19 @@
  */
 package se.skoview.model
 
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.features.*
+import io.ktor.client.features.get
+import io.ktor.client.features.json.*
+import io.ktor.client.features.json.serializer.*
+import io.ktor.client.request.*
+import io.ktor.features.*
+import io.ktor.serialization.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import se.skoview.myHost
+import se.skoview.myPort
 import se.skoview.plugins.tiDomainStorage
 
 /**
@@ -34,59 +46,91 @@ import se.skoview.plugins.tiDomainStorage
 
 // val tiDomainStorage = mutableListOf<TiDomain>()
 
-fun mkTkInfoInfo() {
+fun mkTkInfoInfo(client: io.ktor.client.HttpClient) {
     println("In mkTkInfoInfo()")
 
+    /*
+     val client: io.ktor.client.HttpClient = HttpClient(CIO) {
+         install(JsonFeature) {
+             serializer = KotlinxSerializer()
+         }
+         install(HttpTimeout) {
+             requestTimeoutMillis = 25_000
+         }
+     }
+     */
+
+    // Loop through all domains in bitbucket
     for (bbDomainEntry in BbDomain.mapp) {
 
         val bbDomain = bbDomainEntry.value
 
-        val domainName = bbDomain.name.removePrefix("riv.").replace(".", ":")
+        // FOR TESTING PURPOSES
+        if (bbDomain.name.startsWith("riv.clinicalprocess.activity"))
+            mkTkInfoDomain(client, bbDomain)
+    }
 
-        // Does this domain exist in domdb?
-        if (DomdbDomainMap[domainName] == null) {
-            // println("No visible version for ${bbDomain.name}")
-            continue
-        }
+    client.close()
 
-        // We will never get here if ddDomain is not set
-        val ddDomain: DomdbServiceDomain = DomdbDomainMap[domainName]!!
+    println("All TiDomains, there are ${tiDomainStorage.size}")
+}
 
-        // val visibleTags = domainMeta.domainVersions.map { it.tag }
+fun mkTkInfoDomain(client: io.ktor.client.HttpClient, bbDomain: BbDomain) {
 
-        val tiDomainType: TiDomainTypeEnum? = when (ddDomain.domainType.name) {
-            "Extern" -> TiDomainTypeEnum.EXTERNAL
-            "Nationell tjänstedomän" -> TiDomainTypeEnum.NATIONAL
-            "Applikationsspecifik tjänstedomän" -> TiDomainTypeEnum.APPLICATION_SPECIFIC
-            else -> null
-        }
+    val bbDomainName = bbDomain.name
+    val domainName = bbDomainName.removePrefix("riv.").replace(".", ":")
 
-        val issuesUrl: TiHref? =
-            if (bbDomain.links?.issues != null) TiHref(bbDomain.links.issues.href)
-            else null
+    // Does this domain exist in domdb?
+    if (DomdbDomainMap[domainName] == null) {
+        // println("No visible version for ${bbDomain.name}")
+        return
+    }
 
-        val sourceUrl: TiHref? =
+    // We will never get here if ddDomain is not set
+    val ddDomain: DomdbServiceDomain = DomdbDomainMap[domainName]!!
+
+    // val visibleTags = domainMeta.domainVersions.map { it.tag }
+
+    val tiDomainType: TiDomainTypeEnum? = when (ddDomain.domainType.name) {
+        "Extern" -> TiDomainTypeEnum.EXTERNAL
+        "Nationell tjänstedomän" -> TiDomainTypeEnum.NATIONAL
+        "Applikationsspecifik tjänstedomän" -> TiDomainTypeEnum.APPLICATION_SPECIFIC
+        else -> null
+    }
+
+    val bbBaseUrl = "https://bitbucket.org/rivta-domains"
+
+    val issuesUrl: TiHref? =
+        if (bbDomain.links?.issues != null) // TiHref(bbDomain.links.issues.href)
+            TiHref("$bbBaseUrl/$bbDomainName/issues")
+        else null
+
+    val sourceUrl: TiHref = TiHref("$bbBaseUrl/$bbDomainName/src")
+    /*
             if (bbDomain.links?.source != null) TiHref(bbDomain.links.source.href)
             else null
+         */
 
-        val hippoUrl: TiHref? =
-            if (! mkHippoDomainUrl(domainName).isNullOrBlank()) TiHref(mkHippoDomainUrl(domainName))
-            else null
+    val hippoUrl: TiHref? =
+        if (!mkHippoDomainUrl(domainName).isNullOrBlank()) TiHref(mkHippoDomainUrl(domainName))
+        else null
 
-        val releaseNotesUrl: TiHref? =
-            if (ddDomain.infoPageUrl != null) TiHref(ddDomain.infoPageUrl)
-            else null
+    val releaseNotesUrl: TiHref? =
+        if (ddDomain.infoPageUrl != null) TiHref(ddDomain.infoPageUrl)
+        else null
 
-        val tiLinks = TiLinks(
-            self = TiHref("http://localhost/domains/$domainName"),
-            issues = issuesUrl,
-            source = sourceUrl,
-            hippo = hippoUrl,
-            `release-notes` = releaseNotesUrl,
-        )
+    val tiLinks = TiLinks(
+        self = TiHref("http://$myHost:$myPort/domains/$domainName"),
+        issues = issuesUrl,
+        source = sourceUrl,
+        hippo = hippoUrl,
+        `release-notes` = releaseNotesUrl,
+    )
 
+    // Time to collect information about tags/versions
+    val versions = mkTiDomainVersions(client, bbDomain)
 
-        /*
+    /*
  
          val tkvOwner =
              if (!domainMeta.owner.isNullOrBlank())
@@ -132,23 +176,106 @@ fun mkTkInfoInfo() {
  3. Get source: https://api.bitbucket.org/2.0/repositories/rivta-domains/riv.clinicalprocess.logistics.logistics/src/$hash/ -- VERY IMPORTANT that this URL ends with a slash
   */
  */
-        val tiDomain =
-            TiDomain(
-                name = domainName,
-                swedishShortName = ddDomain.swedishShort,
-                swedishLongName = ddDomain.swedishLong,
-                domainType = tiDomainType,
-                description = ddDomain.description,
-                owner = ddDomain.owner,
-                links = tiLinks,
-                bbiUid = bbDomain.uuid,
-                // todo: Empty hippoUrl should be changed to null
-                hippoUrl = mkHippoDomainUrl(domainName),
-                // versions = null
-            )
-        tiDomainStorage.add(tiDomain)
+    val tiDomain =
+        TiDomain(
+            name = domainName,
+            swedishShortName = ddDomain.swedishShort,
+            swedishLongName = ddDomain.swedishLong,
+            domainType = tiDomainType,
+            description = ddDomain.description,
+            owner = ddDomain.owner,
+            links = tiLinks,
+            bbiUid = bbDomain.uuid,
+            versions = versions
+        )
+    tiDomainStorage.add(tiDomain)
+}
+
+/**
+ * Find and return all tags which match a version entry in DomDB
+ */
+fun mkTiDomainVersions(client: io.ktor.client.HttpClient, bbDomain: BbDomain): List<TiDomainVersion>? {
+    println("In mkTiDomainVersions()")
+    val bbDomainName = bbDomain.name
+    val domainName = bbDomainName.removePrefix("riv.").replace(".", ":")
+
+    println("domanName: $domainName")
+    if (domainName == "supportprocess:logistics:scheduling") println("domdbDomain: ${DomdbDomainMap[domainName]}")
+    if (!DomdbDomainMap.containsKey(domainName)) {
+        println("  DomDb does not contain this domain")
+        return null
+    } else {
+        if (DomdbDomainMap[domainName]?.versions == null) {
+            println("  The domain does not contain any versions i DomDb")
+            return null
+        }
     }
-    println("All TiDomains, there are ${tiDomainStorage.size}")
+
+/*
+    1. Fetch all tags for the current domain
+        https://api.bitbucket.org/2.0/repositories/rivta-domains/riv.eservicesupply.eoffering/refs/tags
+    2. Match with domdb versions (tag and name through sourceControlPath
+    3. Get the hash of the commit of the tag/version of interest
+    4. Fetch all source files through:
+        https://api.bitbucket.org/2.0/repositories/rivta-domains/riv.clinicalprocess.logistics.logistics/src/d5b1153f8f82303ff93d5a727c2e065fbe7103aa/
+ */
+
+    /*
+    println("A")
+    for (ddVersion in DomdbDomainMap[domainName]?.versions!!) {
+        val tag = ddVersion.sourceControlPath.substringAfterLast("/")
+        println("$domainName : name = ${ddVersion.name}, tag = $tag")
+    }
+     */
+
+    if (bbDomain.links?.tags == null) return null
+
+    // if (bbDomain.links == null) return null
+    // else if (bbDomain.links.tags == null) return null
+
+    val bbTagsUrl: String = bbDomain.links.tags.href
+
+    var url: String? = bbTagsUrl
+    var bbTagPagination: BbTagPagination
+
+    var page = 0
+
+    val tagList: MutableList<BbTag> = mutableListOf()
+
+    runBlocking {
+        while (url != null) {
+            page += 1
+            bbTagPagination = client.request(url!!)
+            bbTagPagination.values?.let { tagList.addAll(it) }
+            url = bbTagPagination.next
+        }
+    }
+
+    // We now have a list of tags from bitbucket
+    println("  Number of tags: ${tagList.size}")
+
+    // Filter the list to only include tags that correspond to a version in DomDB
+    if (DomdbDomainMap[domainName]?.versions == null) {
+        println("No versions found of domain $domainName in DomDb")
+    }
+
+    val ddVersionList: Array<DomdbVersion>? = DomdbDomainMap[domainName]!!.versions
+    if (ddVersionList != null) {
+        for (ddVersion in ddVersionList) {
+            if (ddVersion.name == "trunk") continue
+            println("Version from DomDB: tagName=${ddVersion.tagName}, name=${ddVersion.name}")
+            val bbTagList = tagList.filter { it.name == ddVersion.tagName }
+                if (bbTagList.isNullOrEmpty()) {
+                    // println("Filtering resulted in empty list when ddVersion.tagName = ${ddVersion.tagName}")
+                    continue
+                }
+                val bbTag =  bbTagList[0]
+
+            println("   bbTag <--> ddVersion : ${bbTag.name} <--> ${ddVersion.name}")
+        }
+    }
+
+    return null
 }
 
 enum class TiDomainTypeEnum {
@@ -156,15 +283,6 @@ enum class TiDomainTypeEnum {
     EXTERNAL,
     APPLICATION_SPECIFIC,
     UNKNOWN
-}
-
-enum class TiSourceEnum {
-    DOMDB,
-    BITBUCKET,
-    DOMAIN_META_DATA,
-    COMMON_META_DATA,
-    TPDB,
-    CALCULATED
 }
 
 @Serializable
@@ -176,9 +294,8 @@ data class TiDomain(
     val description: String,
     val owner: String?,
     val bbiUid: String = "",
-    val hippoUrl: String?,
     val links: TiLinks,
-    // val versions: List<DomainVersion>?
+    val versions: List<TiDomainVersion>? = null
 ) {
 
     init {
@@ -190,26 +307,24 @@ data class TiDomain(
     }
 }
 
-
 @Serializable
 data class TiLinks(
     val self: TiHref,
     val source: TiHref? = null,
-    val issues: TiHref ? = null,
+    val issues: TiHref? = null,
     val versions: TiHref? = null,
     val html: TiHref? = null,
     val hippo: TiHref? = null,
     val `release-notes`: TiHref? = null
 )
 
-
 @Serializable
 data class TiHref(val href: String)
 
 @Serializable
 data class TiDomainVersion(
-    val name: String,
-    val tag: String,
+    val name: String, // Is the version name, ex 1.0
+    val tag: String, // Is the corresponding tag, ought to be the same as name but might be different (see domdb version end part of sourceControlPath (EOFFERING_1_0_0)
     val tkbUrl: String,
     val abUrl: String,
     val zipUrl: String,

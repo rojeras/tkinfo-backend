@@ -16,7 +16,13 @@ fun loadExternalInfo() {
     runBlocking {
         val client: HttpClient = HttpClient(CIO) {
             install(JsonFeature) {
-                serializer = KotlinxSerializer()
+                serializer = KotlinxSerializer(
+                    kotlinx.serialization.json.Json {
+                        prettyPrint = true
+                        ignoreUnknownKeys = true
+                        coerceInputValues = true
+                    }
+                )
             }
             install(HttpTimeout) {
                 requestTimeoutMillis = 25_000
@@ -52,6 +58,11 @@ fun loadExternalInfo() {
         println("TPDB: number of contracts: ${tpdbContractList.await().size}")
         println("BitBukcet: ${bitPages.await()} pages, number of domains: ${BbDomain.mapp.size}")
         println("Domdb: number of domains: ${domdbList.await().size}")
+
+        println("Will now make TkInfiInfo")
+        mkTkInfoInfo(client)
+
+        client.close()
     }
     println("Exiting loadExternalInfo()")
 }

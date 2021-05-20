@@ -209,11 +209,31 @@ data class Links(
     val self: Self,
     val html: Html,
     val hooks: Hooks? = null,
-    val issues: Issues? = null
+    val issues: Issues? = null,
+    val comments: Comments? = null,
+    val patch: Patch? = null,
+    val approve: Approve? = null,
+    val diff: Diff? = null,
+    val statuses: Statuses? = null,
 )
 
 @Serializable
+data class Statuses(val href: String = "")
+
+@Serializable
+data class Diff(val href: String = "")
+
+@Serializable
+data class Approve(val href: String = "")
+
+@Serializable
+data class Patch(val href: String = "")
+
+@Serializable
 data class Pullrequests(val href: String = "")
+
+@Serializable
+data class Comments(val href: String = "")
 
 @Serializable
 data class Hooks(val href: String = "")
@@ -235,3 +255,88 @@ data class Workspace(
 
 @Serializable
 data class Forks(val href: String = "")
+
+// ----------------------------------------------------------------
+// Tag specific
+@Serializable
+data class BbTagPagination(
+    val previous: String = "",
+    val size: Int = -1,
+    val values: List<BbTag>?,
+    val page: Int = -1,
+    val pagelen: Int = -1,
+    val next: String? = null
+)
+
+@Serializable
+data class BbTag(
+    val date: String = "",
+    val tagger: Tagger? = null,
+    val name: String = "",
+    val links: Links,
+    val message: String = "",
+    val type: String = "",
+    val target: Target
+) {
+    init {
+        mapp[name] = this
+    }
+
+    companion object {
+        val mapp: MutableMap<String, BbTag> = mutableMapOf()
+    }
+}
+
+@Serializable
+data class Tagger(
+    val raw: String = "",
+    val type: String = "",
+    val user: User? = null
+)
+
+@Serializable
+data class User(
+    val display_name: String = "",
+    val accountId: String = "",
+    val nickname: String = "",
+    val links: Links,
+    val displayName: String = "",
+    val type: String = "",
+    val uuid: String = "",
+    val account_id: String = ""
+)
+
+@Serializable
+data class Target(
+    val date: String = "",
+    val author: Author,
+    val links: Links,
+    val repository: Repository,
+    val message: String = "",
+    val type: String = "",
+    val hash: String = "",
+    val parents: List<ParentsItem>?
+)
+
+@Serializable
+data class Author(
+    val raw: String = "",
+    val type: String = "",
+    val user: User? = null
+)
+
+@Serializable
+data class ParentsItem(
+    val links: Links,
+    val type: String = "",
+    val hash: String = ""
+)
+
+@Serializable
+data class Repository(
+    val full_name: String,
+    val name: String = "",
+    val links: Links,
+    val type: String = "",
+    val uuid: String = "",
+)
